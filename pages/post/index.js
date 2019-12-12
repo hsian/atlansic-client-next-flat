@@ -4,7 +4,6 @@ import 'react-quill/dist/quill.snow.css'
 
 import getConfig from 'next/config'
 const { serverRuntimeConfig, publicRuntimeConfig } = getConfig()
-console.log(publicRuntimeConfig.staticFolder)
 
 const QuillNoSSRWrapper = dynamic(import('react-quill'), {
     ssr: false,
@@ -15,7 +14,7 @@ const QuillNoSSRWrapper = dynamic(import('react-quill'), {
 export default class Post extends Component{
     componentDidMount(){
         if(document){
-            //console.log(this.refs.quill)
+            console.log(this.refs.quill)
         }
     }
     render(){
