@@ -4,7 +4,6 @@ import 'react-quill/dist/quill.snow.css'
 
 import getConfig from 'next/config'
 const { serverRuntimeConfig, publicRuntimeConfig } = getConfig()
-console.log(publicRuntimeConfig.staticFolder)
 
 const QuillNoSSRWrapper = dynamic(import('react-quill'), {
     ssr: false,
