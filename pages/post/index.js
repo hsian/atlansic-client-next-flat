@@ -15,7 +15,7 @@ const QuillNoSSRWrapper = dynamic(import('react-quill'), {
 export default class Post extends Component{
     componentDidMount(){
         if(document){
-            //console.log(this.refs.quill)
+            console.log(this.refs.quill)
         }
     }
     render(){
