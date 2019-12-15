@@ -1,0 +1,44 @@
+/* :global(.ui.grid>*){
+    padding-left:0!important;
+    padding-right:0!important;
+} */
+
+ul, li, ol{
+    list-style: none;
+}
+
+.ml20{
+    margin-left:20px;
+}
+
+.min768, .max768, .min993, .max993{
+    display: none;
+}
+
+@media only screen and (max-width: 767px){
+    .ui.container {
+        width:100%!important;
+    }
+
+    .max768{
+        display: block;
+    }
+}
+
+@media only screen and (min-width: 768px){
+    .min768{
+        display: block;
+    }
+}
+
+@media only screen and (max-width: 992px){
+    .max993{
+        display: block;
+    }
+}
+
+@media only screen and (min-width: 993px){
+    .min993{
+        display: block;
+    }
+}
