@@ -44,6 +44,13 @@ class MenuItem extends Component{
                     permission: 2
                 }
             ],
+            [
+                { 
+                    path: '/member/comments', 
+                    text: '评论管理',
+                    permission: 2
+                }
+            ],
         ]
     }
 

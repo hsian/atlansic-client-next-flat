@@ -193,7 +193,7 @@ export default class NewPost extends Component{
                         </Form.Field>
                         <Form.Field inline >
                             {
-                                options.length && options.map((v, i) => {
+                                !!options.length && options.map((v, i) => {
                                     return <Dropdown placeholder='选择栏目'
                                     key={i}
                                     selection

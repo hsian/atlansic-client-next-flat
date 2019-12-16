@@ -79,13 +79,13 @@ function CategoriesItem(props){
             </span>
             <Link href={{
                 pathname: "/member/edit_category",
-                query: {id : v.id}
+                query: {id : v.id, name: v.name}
             }}>
                 <a>修改</a>
             </Link>
             <Link href={{
                 pathname: "/member/new_category",
-                query: {id : v.id}
+                query: {id : v.id, name: v.name}
             }}>
                 <a>新增</a>
             </Link>
