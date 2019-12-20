@@ -2,6 +2,8 @@ import React, { Component } from 'react'
 import Router from 'next/router'
 import Link from 'next/link'
 import { Grid, Form, Input, Icon, Button, Segment, Label, Popup } from 'semantic-ui-react'
+import fetch from 'isomorphic-unfetch';
+import config from '../../config'
 import styles from "./index.less"
 
 export default class IndexView extends Component {
@@ -9,7 +11,11 @@ export default class IndexView extends Component {
         isMail: false,
         isSendMail: false,
         sendMailCount: 60,
-        timer: null
+        timer: null,
+
+        username: "",
+        password: "",
+        captcha: ""
     }
 
     handleToggleMail = () => {
@@ -46,6 +52,32 @@ export default class IndexView extends Component {
         })
     }
 
+    handleSubmit = async () => {
+        const {isMail, username, password, captcha} = this.state;
+        let res;
+        // 密码登录
+        if(!isMail){
+            res = await fetch(config.BASE_URL + "/login/", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    username,
+                    password
+                })
+            });
+        }
+        
+        const resJson = await res.json();
+    }
+
+    handleChange = (e, {name, value}) => {
+        this.setState({
+            [name]: value
+        })
+    }
+
     render() {
         const {isMail, isSendMail, sendMailCount} = this.state;
 
@@ -60,26 +92,35 @@ export default class IndexView extends Component {
                             trigger={<Icon name={!isMail && 'mail' || 'lock'} />} />
                         </Label>
                         
-                        <Form>
+                        <Form onSubmit={this.handleSubmit}> 
                             <Form.Field>
-                                <Input iconPosition='left' fluid placeholder='请输入手机号码'>
+                                <Form.Input iconPosition='left' 
+                                fluid 
+                                placeholder='请输入手机号码' 
+                                onChange={this.handleChange}>
                                     <Icon name='user' />
-                                    <input />
-                                </Input>
+                                    <input name="username" />
+                                </Form.Input>
                             </Form.Field>
                             {
                                 !isMail && <Form.Field>
-                                    <Input iconPosition='left' fluid placeholder='请输入密码'>
+                                    <Form.Input iconPosition='left' 
+                                    fluid 
+                                    placeholder='请输入密码'
+                                    onChange={this.handleChange}>
                                         <Icon name='lock' />
-                                        <input />
-                                    </Input>
+                                        <input name="password" type="password"/>
+                                    </Form.Input>
                                 </Form.Field>
                             }
                             {
                                 isMail && <Form.Field>
-                                    <Input iconPosition='left' fluid action placeholder='请输入验证码'>
+                                    <Form.Input iconPosition='left' 
+                                    fluid 
+                                    action 
+                                    placeholder='请输入验证码'>
                                         <Icon name='mail' />
-                                        <input />
+                                        <input name="captcha"/>
                                         <Button onClick={this.handleSendMail}  
                                         disabled={isSendMail ? true : false}
                                         className={styles.sendMailBtn}>
@@ -87,10 +128,9 @@ export default class IndexView extends Component {
                                                 !isSendMail && '发送验证码' || sendMailCount + 'S'
                                             }
                                         </Button>
-                                    </Input>
+                                    </Form.Input>
                                 </Form.Field>
                             }
-
                             <Form.Field>
                                 <Button primary fluid size="large" type="submit">登录</Button>
                             </Form.Field>
