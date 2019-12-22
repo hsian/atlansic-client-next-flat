@@ -1,8 +1,8 @@
 import React, { Component } from 'react'
 import Router from 'next/router'
 import Link from 'next/link'
-import { Grid, Form, Input, Icon, Button, Segment, Label, Popup } from 'semantic-ui-react'
-import fetch from 'isomorphic-unfetch';
+import { Grid, Form, Icon, Button, Segment, Label, Popup, Message } from 'semantic-ui-react'
+import fetch from '../../utils/fetch';
 import config from '../../config'
 import styles from "./index.less"
 
@@ -15,7 +15,11 @@ export default class IndexView extends Component {
 
         username: "",
         password: "",
-        captcha: ""
+        captcha: "",
+        messageTxt: "",
+        formError: false,
+        formSuccess: false,
+        isLoading: false
     }
 
     handleToggleMail = () => {
@@ -25,11 +29,19 @@ export default class IndexView extends Component {
         })
     }
 
-    handleSendMail = () => {
-        const {sendMailCount, isSendMail} = this.state;
+    handleSendMail = async () => {
+        const {sendMailCount, isSendMail, username} = this.state;
         let count = sendMailCount;
 
         if(isSendMail) return;
+
+        if(!username){
+            this.setState({
+                messageTxt: "手机号码不能为空",
+                formError: true
+            });
+            return;
+        }
 
         const timer = setInterval(() => {
             if(count === 0){
@@ -46,6 +58,28 @@ export default class IndexView extends Component {
             } 
         }, 1000);
 
+        const res = await fetch({
+            url: "/captcha/",
+            method: 'POST',
+            body: {
+                'mobile': username
+            }
+        })
+
+        if(res.error){
+            this.setState({
+                messageTxt: res.message,
+                formError: true
+            })
+        }else{
+            this.setState({
+                messageTxt: res.message,
+                formSuccess: true,
+                // 防止点击登录按钮再点击发送验证码按钮同时出现两个提示框
+                formError: false
+            })
+        }
+
         this.setState({
             timer,
             isSendMail: true
@@ -54,37 +88,75 @@ export default class IndexView extends Component {
 
     handleSubmit = async () => {
         const {isMail, username, password, captcha} = this.state;
-        let res;
+        
+        this.setState({
+            isLoading: true
+        })
+
+        let res, body;
         // 密码登录
         if(!isMail){
-            res = await fetch(config.BASE_URL + "/login/", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    username,
-                    password
-                })
-            });
-        }
-        
-        const resJson = await res.json();
-    }
+            body = {
+                username,
+                password
+            }
+        }else{
+            body = {
+                username,
+                captcha
+            }
+        }   
 
-    handleChange = (e, {name, value}) => {
+        res = await fetch({
+            url: '/login/',
+            method: 'POST',
+            body
+        });
+
+        if(res.error){
+            this.setState({
+                formError: true,
+                messageTxt: res.message
+            })
+        }else{
+            const {token} = res;
+            window.localStorage.setItem('token', token);
+            // 保存到cookie给getInitialProps来使用
+            const cookies = document.cookie.split(";").filter(v => {
+                const arr = v.split('=');
+                return arr[0] !== 'TOKEN';
+            }).join(";")
+            
+            document.cookie = cookies;
+            document.cookie = "TOKEN=" + token;
+            
+            const {backurl} = Router.router.query;
+            Router.replace(backurl || "/")
+        }
+
         this.setState({
-            [name]: value
+            isLoading: false
         })
     }
 
-    render() {
-        const {isMail, isSendMail, sendMailCount} = this.state;
+    handleChange = (e, {name, value}) => {
+        const data = {
+            [name]: value
+        }
 
+        if(this.state.messageTxt){
+            data.messageTxt = "";
+            data.formError = false;
+            data.formSuccess = false;
+        }
+        this.setState(data)
+    }
+
+    render() {
+        const {isMail, isSendMail, sendMailCount, messageTxt, isLoading, formError, formSuccess} = this.state;
         return <div className={styles.page}>
             <Grid padded stackable centered>
                 <Grid.Column style={{maxWidth: '500px'}}>
-                
                     <Segment padded>
                         <Label as='a' color='blue' corner='right' size="large" onClick={this.handleToggleMail}>   
                             <Popup 
@@ -92,14 +164,25 @@ export default class IndexView extends Component {
                             trigger={<Icon name={!isMail && 'mail' || 'lock'} />} />
                         </Label>
                         
-                        <Form onSubmit={this.handleSubmit}> 
+                        <Form error={formError} success={formSuccess}> 
+                            <Message
+                                error
+                                header=''
+                                content={messageTxt}
+                                />
+                            <Message
+                                success
+                                header=''
+                                content={messageTxt}
+                                />
                             <Form.Field>
                                 <Form.Input iconPosition='left' 
                                 fluid 
                                 placeholder='请输入手机号码' 
-                                onChange={this.handleChange}>
+                                onChange={this.handleChange}
+                                name="username">
                                     <Icon name='user' />
-                                    <input name="username" />
+                                    <input />
                                 </Form.Input>
                             </Form.Field>
                             {
@@ -107,9 +190,10 @@ export default class IndexView extends Component {
                                     <Form.Input iconPosition='left' 
                                     fluid 
                                     placeholder='请输入密码'
-                                    onChange={this.handleChange}>
+                                    onChange={this.handleChange}
+                                    name="password" >
                                         <Icon name='lock' />
-                                        <input name="password" type="password"/>
+                                        <input type="password"/>
                                     </Form.Input>
                                 </Form.Field>
                             }
@@ -118,9 +202,11 @@ export default class IndexView extends Component {
                                     <Form.Input iconPosition='left' 
                                     fluid 
                                     action 
-                                    placeholder='请输入验证码'>
+                                    placeholder='请输入验证码'
+                                    onChange={this.handleChange}
+                                    name="captcha">
                                         <Icon name='mail' />
-                                        <input name="captcha"/>
+                                        <input/>
                                         <Button onClick={this.handleSendMail}  
                                         disabled={isSendMail ? true : false}
                                         className={styles.sendMailBtn}>
@@ -132,7 +218,12 @@ export default class IndexView extends Component {
                                 </Form.Field>
                             }
                             <Form.Field>
-                                <Button primary fluid size="large" type="submit">登录</Button>
+                                <Button loading={isLoading} 
+                                primary 
+                                fluid 
+                                size="large" 
+                                type="submit"
+                                onClick={this.handleSubmit}>登录</Button>
                             </Form.Field>
                             <Form.Field>
                                 <p className={styles.naviRegister}>

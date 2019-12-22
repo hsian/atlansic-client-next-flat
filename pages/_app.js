@@ -16,6 +16,13 @@ class MyApp extends App {
 	//   return { ...appProps }
 	// }
 
+	componentDidMount(){
+		const token = localStorage.getItem('token');
+		if(token){
+			document.cookie = "TOKEN=" + token;
+		}
+	}
+
 	render() {
 		const { Component, pageProps } = this.props
 		return <Component {...pageProps} />

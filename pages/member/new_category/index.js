@@ -10,12 +10,18 @@ export default class NewCategory extends Component{
 
     constructor(props){
         super(props)
-        const {id, name} = Router.router.query;
 
         this.state = {
-            id,
-            name
+            id: "",
+            name: ""
         }
+    }
+
+    componentDidMount(){
+        const { id, name} = Router.router.query;
+        this.setState({
+            id, name
+        })
     }
 
     render(){

@@ -5,6 +5,7 @@ import { Dropdown } from 'semantic-ui-react'
 import { Grid } from 'semantic-ui-react'
 import Router from 'next/router'
 
+import fetch from '../../utils/fetch'
 import styles from "./index.less"
 
 const categories = [
@@ -36,12 +37,65 @@ const DropdownCategories = () => {
     </Dropdown>
 }
 
-export default class IndexView extends Component {
+export default class Header extends Component {
     constructor(props) {
         super(props);
+        this.state = {
+            user: null,
+            routerPath: ""
+        }
+    }
+
+    async componentDidMount(){
+        this.setState({
+            routerPath: Router.asPath
+        })
+
+        const userString = window.localStorage.getItem('user');
+        const token = window.localStorage.getItem('token');
+
+        if(!userString && token){
+            const res = await fetch({
+                url: '/user_self/',
+                headers: {
+                    Authorization: 'Bearer ' + token
+                }
+            })
+
+            if(res.error){
+                window.localStorage.setItem('token', "");
+                window.localStorage.setItem('user', "");
+            }else{
+                window.localStorage.setItem('user', JSON.stringify(res));
+
+                this.setState({
+                    user: res
+                })
+            }
+        }
+
+        if(userString){
+            this.setState({
+                user: JSON.parse(userString)
+            })
+        }
+    }
+
+    handleLogout = () => {
+        window.localStorage.setItem('token', "");
+        window.localStorage.setItem('user', "");
+
+        Router.push({
+            pathname: "/login",
+            query: {
+                backurl: this.state.routerPath
+            }
+        })
     }
 
     render() {
+        const {user} = this.state;
+
         return <div>
             <div className="min768">
                 <Grid className={styles.header_wrapper} padded centered>
@@ -57,8 +111,15 @@ export default class IndexView extends Component {
                                 <DropdownCategories />
                             </Grid.Column>
                         </div>
+                        
                         <Grid.Column width={5} textAlign="right">
-                            <Link href="/login"><a>登录 <span>/</span> 注册</a></Link>
+                            {
+                                user && <div>
+                                    <Link href="/member"><a>{user.name || user.username}</a></Link>
+                                    <span className={styles.logout} onClick={this.handleLogout}>退出</span>
+                                </div>
+                                || <Link href="/login"><a>登录 <span>/</span> 注册</a></Link>
+                            }
                         </Grid.Column>
                     </Grid>
                 </Grid>

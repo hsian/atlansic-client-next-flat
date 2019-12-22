@@ -1,29 +1,39 @@
 import React, { Component } from 'react'
 import Router from 'next/router'
 import Link from 'next/link'
-import { Grid, Form, Input, Icon, Button, Segment, Label, Popup } from 'semantic-ui-react'
+import { Grid, Form, Input, Icon, Button, Segment, Label, Popup, Message } from 'semantic-ui-react'
+import fetch from '../../utils/fetch';
 import styles from "./index.less"
 
 export default class IndexView extends Component {
     state = {
-        isMail: false,
         isSendMail: false,
         sendMailCount: 60,
-        timer: null
+        timer: null,
+
+        username: "",
+        password: "",
+        captcha: "",
+        name: "",
+        messageTxt: "",
+        formError: false,
+        formSuccess: false,
+        isLoading: false
     }
 
-    handleToggleMail = () => {
-        const {isMail} = this.state;
-        this.setState({
-            isMail: !isMail
-        })
-    }
-
-    handleSendMail = () => {
-        const {sendMailCount, isSendMail} = this.state;
+    handleSendMail = async () => {
+        const {sendMailCount, isSendMail, username} = this.state;
         let count = sendMailCount;
 
         if(isSendMail) return;
+
+        if(!username){
+            this.setState({
+                messageTxt: "手机号码不能为空",
+                formError: true
+            });
+            return;
+        }
 
         const timer = setInterval(() => {
             if(count === 0){
@@ -40,34 +50,131 @@ export default class IndexView extends Component {
             } 
         }, 1000);
 
+        const res = await fetch({
+            url: "/captcha/",
+            method: 'POST',
+            body: {
+                'mobile': username
+            }
+        })
+
+        if(res.error){
+            this.setState({
+                messageTxt: res.message,
+                formError: true
+            })
+        }else{
+            this.setState({
+                messageTxt: res.message,
+                formSuccess: true,
+                // 防止点击登录按钮再点击发送验证码按钮同时出现两个提示框
+                formError: false
+            })
+        }
+
         this.setState({
             timer,
             isSendMail: true
         })
     }
 
+    handleSubmit = async () => {
+        const {username, password, captcha, name} = this.state;
+        
+        this.setState({
+            isLoading: true
+        })
+
+        const res = await fetch({
+            url: '/register/',
+            method: 'POST',
+            body: {
+                username,
+                password,
+                captcha,
+                name
+            }
+        });
+
+        if(res.error){
+            this.setState({
+                formError: true,
+                messageTxt: res.message
+            })
+        }else{
+            this.setState({
+                formSuccess: true,
+                messageTxt: res.message + "，跳转到登录页"
+            })
+
+            setTimeout(v => {
+                Router.replace("/login")
+            }, 1500)
+        }
+
+        this.setState({
+            isLoading: false
+        })
+    }
+
+    handleChange = (e, {name, value}) => {
+        const data = {
+            [name]: value
+        }
+
+        if(this.state.messageTxt){
+            data.messageTxt = "";
+            data.formError = false;
+            data.formSuccess = false;
+        }
+        this.setState(data)
+    }
+
     render() {
-        const {isMail, isSendMail, sendMailCount} = this.state;
+        const {isSendMail, sendMailCount, messageTxt, isLoading, formError, formSuccess} = this.state;
 
         return <div className={styles.page}>
             <Grid padded stackable centered>
                 <Grid.Column style={{maxWidth: '500px'}}>     
                     <Segment padded>      
-                        <Form>
+                        <Form error={formError} success={formSuccess}>
+                            <Message
+                                error
+                                header=''
+                                content={messageTxt}
+                                />
+                            <Message
+                                success
+                                header=''
+                                content={messageTxt}
+                                />
                             <Form.Field required inline>
-                                <Input iconPosition='left' fluid placeholder='请输入手机号码'>
+                                <Form.Input iconPosition='left' 
+                                fluid 
+                                placeholder='请输入手机号码'
+                                onChange={this.handleChange}
+                                name="username">
                                     <Icon name='user' />
                                     <input />
-                                </Input>
+                                </Form.Input>
                             </Form.Field>
                             <Form.Field required>
-                                <Input iconPosition='left' fluid placeholder='请输入昵称 3~6位字符'>
-                                    <Icon name='user' />
+                                <Form.Input iconPosition='left' 
+                                fluid 
+                                placeholder='请输入昵称 3~6位字符'
+                                onChange={this.handleChange}
+                                name="name">
+                                    <Icon name='address card' />
                                     <input />
-                                </Input>
+                                </Form.Input>
                             </Form.Field>
                             <Form.Field required>
-                                <Input iconPosition='left' fluid action placeholder='请输入验证码'>
+                                <Form.Input iconPosition='left' 
+                                fluid 
+                                action 
+                                placeholder='请输入验证码'
+                                onChange={this.handleChange}
+                                name="captcha">
                                     <Icon name='mail' />
                                     <input />
                                     <Button onClick={this.handleSendMail}  
@@ -77,16 +184,24 @@ export default class IndexView extends Component {
                                             !isSendMail && '发送验证码' || sendMailCount + 'S'
                                         }
                                     </Button>
-                                </Input>
+                                </Form.Input>
                             </Form.Field>
                             <Form.Field required>
-                                <Input iconPosition='left' fluid placeholder='请输入密码'>
+                                <Form.Input iconPosition='left' 
+                                fluid 
+                                placeholder='请输入密码'
+                                onChange={this.handleChange}
+                                name="password">
                                     <Icon name='lock' />
-                                    <input />
-                                </Input>
+                                    <input type="password"/>
+                                </Form.Input>
                             </Form.Field>
                             <Form.Field>
-                                <Button primary fluid size="large" type="submit">注 册</Button>
+                                <Button primary 
+                                fluid 
+                                size="large"
+                                type="submit"
+                                onClick={this.handleSubmit}>注 册</Button>
                             </Form.Field>
                             <Form.Field>
                                 <p className={styles.naviRegister}>
