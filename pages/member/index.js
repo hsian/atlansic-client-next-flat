@@ -8,6 +8,7 @@ import styles from "./index.less"
 import AppContainer from "../../components/container"
 import AsideMenu from "./components/aside_menu"
 import fetch from "../../utils/fetch"
+import {BASE_HOST} from '../../config';
 
 export default class IndexView extends Component {
 
@@ -45,17 +46,13 @@ export default class IndexView extends Component {
         // 可封装, 适用需要登录权限的所有页面
         const {user} = this.props;
 
-        console.log(user)
-
-        if(user.error){
-            if(user.error === 'unauthorized'){
-                Router.push({
-                    pathname: "/login",
-                    query: {
-                        backurl: Router.asPath
-                    }
-                })
-            }
+        if(user.error && user.error === 'unauthorized'){
+            Router.push({
+                pathname: "/login",
+                query: {
+                    backurl: Router.asPath
+                }
+            })
         }
     }
 
@@ -82,7 +79,10 @@ export default class IndexView extends Component {
                                 <List.Item>
                                     <List.Content verticalAlign="middle">
                                         头像：
-                                        <Image size="tiny" avatar src={user.avatar} />
+                                        <Image size="tiny" 
+                                        avatar 
+                                        className={styles.avatar} 
+                                        src={BASE_HOST + (user.avatar || '/static/default.png')} />
                                     </List.Content>
                                 </List.Item>
                                 <List.Item>用户名：{user.username} </List.Item>    

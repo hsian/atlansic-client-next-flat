@@ -146,7 +146,7 @@ export default class Header extends Component {
                     </Grid.Column>
                     <Grid.Column floated='right' width={5} textAlign="right" verticalAlign="middle">
                         <Link href="/">
-                            <a><img src="static/logo.png" className={styles.mobileLogo}/></a>
+                            <a><img src="/static/logo.png" className={styles.mobileLogo}/></a>
                         </Link>
                     </Grid.Column>
                 </Grid>

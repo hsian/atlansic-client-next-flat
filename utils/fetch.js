@@ -6,6 +6,7 @@ async function fetch(config){
     let { 
         url, 
         body, 
+        parseBody,
         headers, 
         ...baseConfig} = config;
 
@@ -16,16 +17,19 @@ async function fetch(config){
     baseConfig = {
         ...baseConfig,
         headers: {
-            ...headers,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            ...headers
         },
-        body: JSON.stringify(body)
+        body: parseBody || JSON.stringify(body)
     }
+
+    fetch.pool.forEach(fn => {
+        fn(baseConfig);
+    })
 
     const res = await unfetch(url, baseConfig);
     const resJson = await res.json();
     
-
     // errors
     // if(res.status === 200){
     //     return await res.json();
@@ -37,6 +41,17 @@ async function fetch(config){
 
     return resJson;
     
+}
+
+fetch.pool = [];
+
+fetch.use = (callback) => {
+    fetch.pool.push(callback);
+    return fetch.pool.length - 1;
+}
+
+fetch.remove = (id) => {
+    fetch.pool.splice(id, 1);
 }
 
 export default fetch;
