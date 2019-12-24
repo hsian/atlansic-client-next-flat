@@ -8,6 +8,7 @@ async function fetch(config){
         body, 
         parseBody,
         headers, 
+        NO_MATTER,
         ...baseConfig} = config;
 
     if(!/^http+/.test(url)){
@@ -23,35 +24,38 @@ async function fetch(config){
         body: parseBody || JSON.stringify(body)
     }
 
-    fetch.pool.forEach(fn => {
+    fetch.proxyPools.forEach(fn => {
         fn(baseConfig);
     })
 
     const res = await unfetch(url, baseConfig);
     const resJson = await res.json();
-    
-    // errors
-    // if(res.status === 200){
-    //     return await res.json();
-    // }
 
-    // if(res.status === 401 || res.status === 403 ){
-    //     Router.push()
-    // }
+    if(res.status === 401 || res.status === 403 && !NO_MATTER ){
+        if(resJson.error && resJson.error === 'unauthorized' && process.browser){
+            Router.push({
+                pathname: "/login",
+                query: {
+                    backurl: Router.asPath
+                }
+            })
+        }
+    }
 
     return resJson;
-    
 }
 
-fetch.pool = [];
+fetch.proxyPools = [];
 
 fetch.use = (callback) => {
-    fetch.pool.push(callback);
+    fetch.proxyPools.push(callback);
     return fetch.pool.length - 1;
 }
 
 fetch.remove = (id) => {
-    fetch.pool.splice(id, 1);
+    fetch.proxyPools.splice(id, 1);
 }
 
 export default fetch;
+
+// 关淑怡《深夜港湾》陈慧娴《孤单背影》邝美云《堆积情感》叶倩文《情人知己》林忆莲《词不达意》

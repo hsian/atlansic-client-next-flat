@@ -2,6 +2,8 @@ import React, { Component } from 'react'
 import Router from 'next/router'
 import { Grid, Image, Header, Divider, Form, Input, Icon, Button, Message } from 'semantic-ui-react'
 import classnames from "classnames"
+import { toast } from 'react-toastify';
+
 import styles from "./index.less"
 import fetch from "../../../utils/fetch"
 import {BASE_HOST} from '../../../config';
@@ -49,14 +51,7 @@ export default class IndexView extends Component {
             }
         })
 
-        if(user.error && user.error === 'unauthorized'){
-            Router.push({
-                pathname: "/login",
-                query: {
-                    backurl: Router.asPath
-                }
-            })
-        }else{
+        if(!user.error){
             const {rules} = this.state;
             Object.keys(rules).forEach(key => {
                 rules[key].validator(user[key]);
@@ -135,14 +130,16 @@ export default class IndexView extends Component {
                 messageTxt: res.message
             })
         }else{
-            Router.replace("/member")
+            toast.info("编辑成功");
+            setTimeout(() => {
+                Router.replace("/member")
+            }, 1000)
+            
         }
     }
 
     render() {
         const {form, rules, formError, messageTxt} = this.state;
-
-        console.log(rules)
 
         return <AppContainer>
             <Grid padded stackable className={styles.page}> 

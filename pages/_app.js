@@ -1,6 +1,7 @@
 import React from 'react'
 import App from 'next/app'
 import 'semantic-ui-css/semantic.min.css'
+import 'react-toastify/dist/ReactToastify.css';
 import './_app.css'
 
 class MyApp extends App {

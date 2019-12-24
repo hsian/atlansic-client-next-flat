@@ -1,6 +1,10 @@
 import React, {Component} from 'react';
-import { Grid, Dropdown, Header, Divider, Form, Input, Icon, Button } from 'semantic-ui-react'
+import { Grid, Dropdown, Header, Divider, Form, Input, Icon, Button, Message } from 'semantic-ui-react'
+import Router from 'next/router'
+import { toast } from 'react-toastify';
 
+import fetch from "../../../utils/fetch"
+import {BASE_HOST} from '../../../config';
 import AppContainer from "../../../components/container"
 import AsideMenu from "../components/aside_menu"
 import styles from "./index.less"
@@ -65,6 +69,7 @@ const toolbarContainer = [
     { list: 'ordered' },
     { list: 'bullet' },
     ],
+    ["code-block"],
     ['image']
 ]
 
@@ -76,7 +81,11 @@ export default class NewPost extends Component{
         // 查找数组的层级
         level: 0,
         ReactQuill: null,
-        content: ""
+
+        title: "",
+        body: "",
+        messageTxt: "",
+        formError: false
     }
 
     componentDidMount(){
@@ -96,7 +105,33 @@ export default class NewPost extends Component{
         });
     }
 
-    imageHandler = () => {
+    uploadFile = async (formData) => {
+        const useCallback = fetch.use(config => {
+            delete config.headers['Content-Type']
+        })
+
+        const res = await fetch({
+            url: "/upload/",
+            method: 'POST',
+            parseBody: formData,
+            headers: {
+                Authorization: 'Bearer ' + localStorage.getItem('token')
+            }
+        })
+
+        fetch.remove(useCallback);
+
+        if(res.error){
+            this.setState({
+                formError: true,
+                messageTxt: "上传失败，" + res.message
+            })
+        }else{
+            return res.url;
+        }
+    }
+
+    imageHandler = async () => {
         this.quillEditor = this.quillRef.getEditor()
         const input = document.createElement('input')
         input.setAttribute('type', 'file')
@@ -105,16 +140,12 @@ export default class NewPost extends Component{
         input.onchange = async () => {
             const file = input.files[0]
             const formData = new FormData()
-            formData.append('quill-image', file)
-            console.log(formData)
-            // const res = await uploadFile(formData) 
+            formData.append('file', file)
+
+            const url = await this.uploadFile(formData) 
             const range = this.quillEditor.getSelection()
-            // const link = res.data[0].url
-            const link = 'https://www.baidu.com/img/baidu_jgylogo3.gif'
     
-            // this part the image is inserted
-            // by 'image' option below, you just have to put src(link) of img here. 
-            this.quillEditor.insertEmbed(range.index, 'image', link)
+            this.quillEditor.insertEmbed(range.index, 'image', BASE_HOST + url)
         }
     }
 
@@ -170,14 +201,66 @@ export default class NewPost extends Component{
         })
     }
 
-    handleChangeDetail = (content) => {
-        this.setState({
-            content
+    handleChangeDetail = (body) => {
+        this.handleChange(null, { 
+            name: 'body', 
+            value: body 
         })
+    }
+
+    handleChange = (e, {name, value}) => {
+        this.setState({
+            [name]: value
+        })
+    }
+
+    handleSubmit = async () => {
+        const {currentValue, title, body} = this.state;
+        if(title.trim() === ""){
+            return this.setState({
+                formError: true,
+                messageTxt: "标题不能为空"
+            })
+        }
+
+        if(currentValue.length === 0){
+            return this.setState({
+                formError: true,
+                messageTxt: "请选择栏目"
+            })
+        }
+
+        if(body.trim() === ""){
+            return this.setState({
+                formError: true,
+                messageTxt: "内容不能为空"
+            })
+        }
+
+        const res = await fetch({
+            url: "/new_post/",
+            method: "POST",
+            body: {
+                title,
+                body,
+                category_id: currentValue[currentValue.length - 1]
+            },
+            headers: {
+                Authorization: 'Bearer ' + localStorage.getItem('token')
+            }
+        })
+
+        if(!res.error){
+            toast("发布成功");
+            setTimeout(() => {
+                Router.replace("/member/posts")
+            }, 1000)
+            
+        }
     }
     
     render(){
-        const {options, ReactQuill} = this.state;
+        const {options, ReactQuill, messageTxt, formError} = this.state;
 
         return <AppContainer>
             <Grid padded stackable className={styles.page}> 
@@ -186,10 +269,19 @@ export default class NewPost extends Component{
                 </Grid.Column>
                 <Grid.Column mobile={16} tablet={16} computer={12}>
                     <Header as="h3">新建文章</Header>
-
-                    <Form>
+                    <Form error={formError}>
+                        <Message
+                            error
+                            header=''
+                            content={messageTxt}
+                            />
                         <Form.Field>
-                            <Input placeholder='请输入标题' fluid className={styles.formField}/>
+                            <Input placeholder='请输入标题' 
+                            fluid 
+                            className={styles.formField}
+                            name="title"
+                            onChange={this.handleChange}
+                            />
                         </Form.Field>
                         <Form.Field inline >
                             {
@@ -215,7 +307,6 @@ export default class NewPost extends Component{
                                             image: this.imageHandler
                                         }
                                     },
-
                                 }} 
                                 theme="snow" 
                                 placeholder="请输入内容"
@@ -224,7 +315,9 @@ export default class NewPost extends Component{
                             }
                         </Form.Field>
                         <Form.Field>
-                            <Button type='submit' primary>发布</Button>
+                            <Button type='submit' 
+                            primary
+                            onClick={this.handleSubmit}>发布</Button>
                         </Form.Field>
                     </Form>
                 </Grid.Column>

@@ -59,7 +59,8 @@ export default class Header extends Component {
                 url: '/user_self/',
                 headers: {
                     Authorization: 'Bearer ' + token
-                }
+                },
+                NO_MATTER: true
             })
 
             if(res.error){

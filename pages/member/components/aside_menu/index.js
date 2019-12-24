@@ -56,7 +56,9 @@ class MenuItem extends Component{
 
     componentDidMount(){
         const {meunItems} = this.state;
-        let itemText = "我的资料";
+        const {activeItem} = this.props;
+
+        let itemText = activeItem || "我的资料";
         const {pathname} = Router.router;
 
         meunItems.forEach(subItems => {
@@ -75,7 +77,7 @@ class MenuItem extends Component{
     handleItemClick = (e, { name }) => this.setState({ activeItem: name })
 
     render(){
-        const { activeItem, meunItems } = this.state
+        const { activeItem, meunItems } = this.state;
         return <Menu secondary vertical fluid>
             {
                 (() => {
@@ -109,7 +111,7 @@ class MenuItem extends Component{
 export default class IndexView extends Component {
     state = { 
         activeItem: '我的资料',
-        activeIndex: ""
+        activeIndex: "",
     }
 
     handleClick = (e, titleProps) => {
@@ -121,10 +123,11 @@ export default class IndexView extends Component {
 
     render() {
         const { activeIndex } = this.state
+        const {activeItem} = this.props;
         
         return <div className={styles.aside}>
             <div className="min993">
-                <MenuItem/>
+                <MenuItem activeItem={activeItem}/>
             </div>
             <div className="max993">
                 <Accordion styled fluid>

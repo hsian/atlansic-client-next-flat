@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
 import { Grid, Responsive, Container } from 'semantic-ui-react'
+import { ToastContainer, Flip, toast } from 'react-toastify';
+
 import  Header from "../header"
 import  Footer from "../footer"
 import  styles  from './index.less';
@@ -22,6 +24,10 @@ export default class AppContainer extends Component {
                 </Grid> 
             </Responsive>
             { showFooter && <Footer/>}
+            <ToastContainer 
+            transition={Flip}
+            position="top-center"
+            autoClose={1500}/>
         </div>
     }
 }
